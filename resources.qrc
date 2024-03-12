@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/flood_path_finder" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
