@@ -1,32 +1,28 @@
-Plugin Builder Results
+Análise Geoespacial para Implantação de Infraestrutura Verde
 
-Your plugin FloodPathFinder was created in:
-    C:/PyQGis\flood_path_finder
+Este repositório contém um complemento para o software QGIS desenvolvido em Python para realizar análises geoespaciais visando identificar vias ideais para implantação de infraestrutura verde. O complemento utiliza parâmetros como cota média (topografia) e largura da rua para determinar as melhores áreas para implementação.
 
-Your QGIS plugin directory is located at:
-    C:/Users/Usuario/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins
+Funcionalidades
 
-What's Next:
+- Análise Geoespacial: Utilizando técnicas de análise espacial, o complemento processa dados geoespaciais para identificar as vias mais adequadas para a implantação de infraestrutura verde.
+  
+- Parâmetros Personalizáveis: Os parâmetros como cota média e largura da rua são ajustáveis, permitindo uma análise flexível e adaptável a diferentes cenários urbanos.
 
-  * Copy the entire directory containing your new plugin to the QGIS plugin
-    directory
+Como Usar
 
-  * Compile the resources file using pyrcc5
+1. Instalação: Faça o download do código fonte ou clone este repositório para o seu ambiente local.
+   
+2. QGIS: Certifique-se de ter o software QGIS instalado em seu computador.
 
-  * Run the tests (``make test``)
+3. Adicionar Complemento: No QGIS, vá para a opção "Complementos" e escolha "Gerenciar e Instalar Complementos". Selecione a opção para adicionar um novo complemento a partir de um arquivo local e selecione o arquivo do complemento baixado ou clonado.
 
-  * Test the plugin by enabling it in the QGIS plugin manager
+4. Execução: Após a instalação, o complemento estará disponível no menu do QGIS. Basta selecioná-lo para iniciar a análise.
 
-  * Customize it by editing the implementation file: ``flood_path_finder.py``
+5. Configuração dos Parâmetros: Informe os parâmetros desejados para a análise, como cota média e largura da rua.
 
-  * Create your own custom icon, replacing the default icon.png
+6. Visualização dos Resultados: Uma vez concluída a análise, os resultados serão exibidos no QGIS, destacando as vias ideais para implantação de infraestrutura verde.
 
-  * Modify your user interface by opening FloodPathFinder_dialog_base.ui in Qt Designer
+Contribuição
 
-  * You can use the Makefile to compile your Ui and resource files when
-    you make changes. This requires GNU make (gmake)
-
-For more information, see the PyQGIS Developer Cookbook at:
-http://www.qgis.org/pyqgis-cookbook/index.html
-
-(C) 2011-2018 GeoApt LLC - geoapt.com
+Contribuições são bem-vindas! Se você identificar problemas, tiver ideias para melhorias ou quiser contribuir com código, sinta-se à vontade para abrir uma issue ou enviar um pull request.
+ 

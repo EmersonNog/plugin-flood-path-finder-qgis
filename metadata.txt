@@ -5,15 +5,15 @@
 [general]
 name=Flood Path Finder
 qgisMinimumVersion=3.0
-description=Este plugin é usado para identificar as infraestruturas viárias em pontos suscetíves a inundação
+description=Developed with Python by Emerson N. Santos - 2024
 version=1.0
 author=Nogueira
 email=catce.nogueira@gmail.com
 
-about=Este plugin é usado para identificar as infraestruturas viárias em pontos suscetívesa inundação
+about=This add-on/plugin was developed to identify road infrastructure in areas susceptible to flooding, classifying these roads according to their width and location in susceptible locations. (The algorithm works more reliably based on the layers of risk generated through the Hand Model methodology (Height Above the Nearest Drainage))
 
 tracker=https://www.instagram.com/noggueira/
-repository=http://repo
+repository=https://github.com/EmersonNog/plugin-flood-path-finder-qgis
 # End of mandatory metadata
 
 # Recommended items:
@@ -26,7 +26,7 @@ hasProcessingProvider=no
 tags=analysis, flood, python
 
 homepage=https://www.instagram.com/noggueira/
-category=Plugins
+category=Hydrology, Algorithm, Classification
 icon=icon.png
 # experimental flag
 experimental=False

@@ -22,9 +22,10 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
-from qgis.PyQt.QtGui import QIcon, QStandardItemModel, QStandardItem
+from qgis.PyQt.QtGui import QIcon, QStandardItemModel, QStandardItem, QTextCursor
 from qgis.PyQt.QtWidgets import QAction, QFileDialog
 from qgis.core import *
+import datetime
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -32,6 +33,7 @@ from .resources import *
 from .flood_path_finder_dialog import FloodPathFinderDialog
 import os.path
 import processing
+import subprocess
 import sys, os
 from osgeo import ogr
 
@@ -193,22 +195,33 @@ class FloodPathFinder:
             self.iface.addVectorLayer(camada_abrir, os.path.basename(camada_abrir), "ogr")
             self.carregaVetor(comboBox)
 
-
     def run(self): 
         if self.first_start == True:
             self.first_start = False
             self.dlg = FloodPathFinderDialog()
-    
+
         self.dlg.checkBox.setChecked(True)
-        self.dlg.checkBox_2.setChecked(True)
+        self.dlg.checkBox_2.setChecked(True) 
 
         # show the dialog
         self.dlg.show()
         # add funções criadas
         self.dlg.comboBox.clear()
         self.dlg.comboBox_2.clear()
+
         self.carregaVetor(self.dlg.comboBox)
         self.carregaVetor(self.dlg.comboBox_2)
+
+        self.dlg.comboBox.currentIndexChanged.connect(lambda: self.carregaColunas(self.dlg.comboBox, self.dlg.comboBox_3))
+        self.dlg.comboBox_2.currentIndexChanged.connect(lambda: self.carregaColunasComboBox4(self.dlg.comboBox_2, self.dlg.comboBox_4))
+        
+        self.carregaColunas(self.dlg.comboBox, self.dlg.comboBox_3)
+        self.carregaColunasComboBox4(self.dlg.comboBox_2, self.dlg.comboBox_4)
+
+        self.dlg.comboBox.currentIndexChanged.connect(lambda: self.carregaColunas(self.dlg.comboBox, self.dlg.comboBox_3))
+
+        self.dlg.comboBox_3.currentIndexChanged.connect(lambda: self.carregaValoresColuna(self.dlg.comboBox_3, self.dlg.listView))
+        
         self.dlg.toolButton.clicked.connect(lambda: self.abrirVetor(self.dlg.comboBox))  # Conectar o primeiro toolButton
         self.dlg.toolButton_2.clicked.connect(lambda: self.abrirVetor(self.dlg.comboBox_2))  # Conectar o segundo toolButton
         self.dlg.toolButton_3.clicked.connect(lambda: self.definirCaminhoSaida(self.dlg.lineEdit))  # Conectar toolButton_3
@@ -217,23 +230,36 @@ class FloodPathFinder:
         # Connect the function to load columns to the change event of comboBox
         self.dlg.comboBox.currentIndexChanged.connect(lambda: self.carregaColunas(self.dlg.comboBox, self.dlg.comboBox_3))
 
-        # Conecte a função para carregar os valores da coluna ao evento de mudança do comboBox_3
-        self.dlg.comboBox_3.currentIndexChanged.connect(lambda: self.carregaValoresColuna(self.dlg.comboBox_3, self.dlg.listView))
-
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
+            # Clear existing text
+            self.dlg.plainTextEdit.clear() 
+            try:
+                current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                input_layer_hand = self.dlg.comboBox.currentText()
+                input_layer_line = self.dlg.comboBox_2.currentText()
+                data_layer_column_risk = self.dlg.comboBox_3.currentText() 
+                data_layer_column_size = self.dlg.comboBox_4.currentText() 
+                
+                # Adicionar a mensagem de início do algoritmo
+                self.dlg.plainTextEdit.appendPlainText(f"Algoritmo iniciado às: {current_datetime}")
+                self.dlg.plainTextEdit.appendPlainText("Algoritmo 'Flood Path Finder' iniciando…")
+                self.dlg.plainTextEdit.appendPlainText("Entrada de parâmetros:")
+                self.dlg.plainTextEdit.appendPlainText(f"Camada de entrada 01: {input_layer_hand}")
+                self.dlg.plainTextEdit.appendPlainText(f"Camada de entrada 02: {input_layer_line}")
+                self.dlg.plainTextEdit.appendPlainText(f"Coluna de risco selecionada: {data_layer_column_risk}")  
+                self.dlg.plainTextEdit.appendPlainText(f"Coluna de tamanho da via selecionada: {data_layer_column_size}")  
+                self.dlg.plainTextEdit.appendPlainText("Algoritmo finalizado.") 
+            except Exception as e:
+                # Se ocorrer algum erro, registre a exceção
+                self.dlg.plainTextEdit.appendPlainText(f"Error: {str(e)}")
+
             # Check if at least one item is checked in the listView
             listViewModel = self.dlg.listView.model()
             if listViewModel is None or listViewModel.rowCount() == 0 or all(listViewModel.item(row).checkState() != Qt.Checked for row in range(listViewModel.rowCount())):
                 self.iface.messageBar().pushMessage("Error", "Selecione pelo menos um item no listView | Please select at least one item in the listView.", level=Qgis.Critical)
-                return
-
-            
-            # Check if the checkBox is checked
-            if not self.dlg.checkBox.isChecked():
-                self.iface.messageBar().pushMessage("Error", "Please check the checkBox before proceeding.", level=Qgis.Critical)
                 return
 
             # Get the selected layer from the first combobox
@@ -264,17 +290,28 @@ class FloodPathFinder:
                 output_polygon_layer.addFeature(feature)
             output_polygon_layer.commitChanges()
 
-            # Get the selected layer from the second combobox
             selected_line_layer_name = self.dlg.comboBox_2.currentText()
             line_layer = QgsProject.instance().mapLayersByName(selected_line_layer_name)[0]
-            # Check if the layer is a line layer
-            if line_layer.geometryType() != QgsWkbTypes.LineGeometry:
-                self.iface.messageBar().pushMessage("Error", "Selected layer is not a line layer.", level=Qgis.Critical)
-                return
 
-            # Perform spatial intersection between line layer and filtered polygon layer
+            # Filter the line layer based on the selected column and threshold
+            selected_column_name = self.dlg.comboBox_4.currentText()
+            threshold = 10  # Adjust the threshold as needed
+            expression = QgsExpression(f'"{selected_column_name}" >= {threshold}')
+            request = QgsFeatureRequest(expression)
+            filtered_features = [f for f in line_layer.getFeatures(request)]
+
+            # Create a memory layer for the filtered line features
+            filtered_line_layer = QgsVectorLayer("LineString?crs=" + line_layer.crs().authid(), "Filtered_Lines", "memory")
+            filtered_line_layer.dataProvider().addAttributes(line_layer.fields())
+            filtered_line_layer.updateFields()
+            filtered_line_layer.startEditing()
+            for feature in filtered_features:
+                filtered_line_layer.addFeature(feature)
+            filtered_line_layer.commitChanges()
+
+            # Perform spatial intersection between the filtered line layer and polygon layer
             intersection_result = processing.run("native:intersection", {
-                'INPUT': line_layer,
+                'INPUT': filtered_line_layer,
                 'OVERLAY': output_polygon_layer,
                 'INPUT_FIELDS': [],
                 'OVERLAY_FIELDS': [],
@@ -311,6 +348,11 @@ class FloodPathFinder:
                 if intersection_path:
                     intersection_layer = QgsVectorLayer(intersection_path, os.path.basename(intersection_path), "ogr")
                     QgsProject.instance().addMapLayer(intersection_layer)
+            
+            self.dlg.tabWidget.setCurrentIndex(1) 
+            self.dlg.show() # Fecha a tela do plugin e so abre quando o processo terminar
+
+
 
 
     def definirCaminhoSaida(self, lineEdit):
@@ -332,6 +374,18 @@ class FloodPathFinder:
         print("Column Names:", column_names)  # Check if column names are correct
         comboBox_3.clear()
         comboBox_3.addItems(column_names)
+
+    def carregaColunasComboBox4(self, comboBox_2, comboBox_4):
+        """Preenche o comboBox_4 com as colunas da tabela de atributos da camada selecionada no comboBox_2"""
+        selected_layer_name = comboBox_2.currentText()
+        selected_layer = QgsProject.instance().mapLayersByName(selected_layer_name)
+        if not selected_layer:
+            return
+        selected_layer = selected_layer[0]
+        fields = selected_layer.fields()
+        column_names = [field.name() for field in fields]
+        comboBox_4.clear()
+        comboBox_4.addItems(column_names)
 
     def carregaValoresColuna(self, comboBox_3, listView): 
         selected_layer_name = self.dlg.comboBox.currentText()
